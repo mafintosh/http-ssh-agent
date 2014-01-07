@@ -9,5 +9,14 @@
     "duplexer2": "0.0.1",
     "ssh2": "~0.2.16",
     "pump": "~0.2.3"
-  }
+  },
+  "keywords": [
+    "http",
+    "agent",
+    "ssh",
+    "private",
+    "server",
+    "auth",
+    "authenticate"
+  ]
 }
