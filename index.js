@@ -81,11 +81,11 @@ var agent = function(host, opts) {
 				var pinger = con._pinger;
 
 				if (refs) {
-					if (sock.ref) sock.ref();
-					if (pinger.ref) pinger.ref();
+					if (sock && sock.ref) sock.ref();
+					if (pinger && pinger.ref) pinger.ref();
 				} else {
-					if (sock.unref) sock.unref();
-					if (pinger.unref) pinger.unref();
+					if (sock && sock.unref) sock.unref();
+					if (pinger && pinger.unref) pinger.unref();
 				}
 			};
 

@@ -35,7 +35,7 @@ var request = require('request');
 request('http://127.0.0.1:8080', {agent:ssh}).pipe(process.stdout);
 ```
 
-## SSH options
+### SSH options
 
 Pass additional ssh options as the second argument
 
