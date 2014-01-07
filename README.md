@@ -7,7 +7,7 @@ Node.js [http agent](http://nodejs.org/api/http.html#http_class_http_agent) that
 ## Usage
 
 Start a http server on a server that you have ssh access to. Since we will be accessing the server using ssh the server can bind to a port that is not open externally.
-On your local machine you just create the agent with some ssh options and pass it to a http module
+On your local machine you just create the agent with some ssh options and pass it to a http module.
 
 ### Using node core
 
@@ -37,11 +37,11 @@ request('http://127.0.0.1:8080', {agent:ssh}).pipe(process.stdout);
 
 ### SSH options
 
-Pass additional ssh options as the second argument
+Pass additional ssh options as the second argument. See [ssh2](https://github.com/mscdex/ssh2) connection options for a full list of available options.
 
 ``` js
 var ssh = agent('username@example.com', {
-	key: 'path-to-private-key', // can also be a buffer,
+	privateKey: 'path-to-private-key', // can also be a buffer,
 	password: 'ssh-password'    // specify a password instead of a key
 });
 ```
