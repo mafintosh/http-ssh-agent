@@ -11,16 +11,25 @@ var util = require('util');
 var HOME = process.env.HOME || process.env.USERPROFILE;
 
 var Socket = function(opts) {
+	var self = this;
+
 	stream.Duplex.call(this, opts);
 
 	this.input = new stream.PassThrough();
 	this.output = new stream.PassThrough();
 	this.destroyed = false;
-	this.reading = 0;
+	this.reading = false;
 
-	var self = this;
 	this.output.on('readable', function() {
-		if (self.reading) self._read(self.reading);
+		if (self.reading) self._read();
+	});
+
+	this.output.on('end', function() {
+		self.push(null);
+	});
+
+	this.on('finish', function() {
+		self.input.end();
 	});
 
 	this.input.destroy = this.output.destroy = this.destroy.bind(this);
@@ -45,11 +54,11 @@ Socket.prototype._write = function(data, enc, cb) {
 	return this.input.write(data, enc, cb);
 };
 
-Socket.prototype._read = function(n) {
-	this.reading = 0;
-	var data = this.output.read(n);
-	if (data) return this.push(data);
-	this.reading = n;
+Socket.prototype._read = function() {
+	this.reading = false;
+	var data = this.output.read();
+	if (data) this.push(data);
+	else this.reading = true;
 };
 
 
