@@ -6,7 +6,6 @@
   "author": "Mathias Buus <mathiasbuus@gmail.com>",
   "dependencies": {
     "thunky": "~0.1.0",
-    "duplexer2": "0.0.1",
     "ssh2": "~0.2.16",
     "pump": "~0.2.3"
   },
