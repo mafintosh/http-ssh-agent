@@ -1,14 +1,57 @@
 var http = require('http');
 var Connection = require('ssh2');
-var duplexer2 = require('duplexer2');
 var thunky = require('thunky');
 var pump = require('pump');
 var stream = require('stream');
 var fs = require('fs');
 var path = require('path');
 var net = require('net');
+var util = require('util');
 
 var HOME = process.env.HOME || process.env.USERPROFILE;
+
+var Socket = function(opts) {
+	stream.Duplex.call(this, opts);
+
+	this.input = new stream.PassThrough();
+	this.output = new stream.PassThrough();
+	this.destroyed = false;
+	this.reading = 0;
+
+	var self = this;
+	this.output.on('readable', function() {
+		if (self.reading) self._read(self.reading);
+	});
+
+	this.input.destroy = this.output.destroy = this.destroy.bind(this);
+};
+
+util.inherits(Socket, stream.Duplex);
+
+Socket.prototype.destroy = function(err) {
+	if (this.destroyed) return;
+	this.destroyed = true;
+
+	var self = this;
+	process.nextTick(function() {
+		if (err) self.emit('error', err);
+		self.emit('close');
+		self.input.emit('close');
+		self.output.emit('close');
+	});
+};
+
+Socket.prototype._write = function(data, enc, cb) {
+	return this.input.write(data, enc, cb);
+};
+
+Socket.prototype._read = function(n) {
+	this.reading = 0;
+	var data = this.output.read(n);
+	if (data) return this.push(data);
+	this.reading = n;
+};
+
 
 var agent = function(host, opts) {
 	if (typeof host === 'object' && host) return agent(null, host);
@@ -23,6 +66,7 @@ var agent = function(host, opts) {
 
 	opts.privateKey = opts.key || opts.privateKey || path.join('~', '.ssh', 'id_rsa');
 
+	var hwm = opts.highWaterMark;
 	var a = new http.Agent();
 	var refs = 0;
 
@@ -47,31 +91,8 @@ var agent = function(host, opts) {
 		});
 	});
 
-	a.close = function() {
-		connect(function(err, con) {
-			if (err) return;
-			con.end();
-		});
-	};
-
 	a.createConnection = function(opts) {
-		var input = new stream.PassThrough();
-		var output = new stream.PassThrough();
-		var d = duplexer2(input, output);
-		var destroyed = false;
-
-		d.destroy = function(err) {
-			if (destroyed) return;
-			destroyed = true;
-
-			if (err) d.emit('error', err);
-
-			process.nextTick(function() {
-				d.emit('close');
-				input.emit('close');
-				output.emit('close');
-			});
-		};
+		var socket = new Socket(hwm ? {highWaterMark:hwm} : {});
 
 		connect(function(err, con) {
 			if (err) return d.destroy(err);
@@ -99,23 +120,23 @@ var agent = function(host, opts) {
 			update();
 			con.forwardOut('127.0.0.1', 8000, opts.host, opts.port, function(err, stream) {
 				if (err) {
-					d.destroy(err);
+					socket.destroy(err);
 					unref();
 				} else {
-					pump(input, stream, output, unref);
+					pump(socket.input, stream, socket.output, unref);
 				}
 			});
 		});
 
-		d.on('data', function(data) {
-			if (d.ondata) d.ondata(data, 0, data.length);
+		socket.on('data', function(data) {
+			if (socket.ondata) socket.ondata(data, 0, data.length);
 		});
 
-		d.on('end', function() {
-			if (d.onend) d.onend();
+		socket.on('end', function() {
+			if (socket.onend) socket.onend();
 		});
 
-		return d;
+		return socket;
 	};
 
 	return a;
