@@ -104,7 +104,7 @@ var agent = function(host, opts) {
 		var socket = new Socket(hwm ? {highWaterMark:hwm} : {});
 
 		connect(function(err, con) {
-			if (err) return d.destroy(err);
+			if (err) return socket.destroy(err);
 
 			refs++;
 
