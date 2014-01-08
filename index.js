@@ -8,6 +8,8 @@ var fs = require('fs');
 var path = require('path');
 var net = require('net');
 
+var HOME = process.env.HOME || process.env.USERPROFILE;
+
 var agent = function(host, opts) {
 	if (typeof host === 'object' && host) return agent(null, host);
 	if (!opts) opts = {};
@@ -19,7 +21,7 @@ var agent = function(host, opts) {
 		opts.port = parseInt(parts[3] || 22, 10);
 	}
 
-	opts.privateKey = opts.key || opts.privateKey || path.join(process.env.HOME || process.env.USERPROFILE, '.ssh', 'id_rsa');
+	opts.privateKey = opts.key || opts.privateKey || path.join('~', '.ssh', 'id_rsa');
 
 	var a = new http.Agent();
 	var refs = 0;
@@ -38,7 +40,7 @@ var agent = function(host, opts) {
 
 		if (Buffer.isBuffer(opts.privateKey)) return ready();
 
-		fs.readFile(opts.privateKey, function(err, key) {
+		fs.readFile(opts.privateKey.replace(/^~/, HOME), function(err, key) {
 			if (err) return cb(err);
 			opts.privateKey = key;
 			ready();
