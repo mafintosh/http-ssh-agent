@@ -79,15 +79,36 @@ var agent = function(host, opts) {
 	var a = new http.Agent();
 	var refs = 0;
 
+	var verified = true;
 	var connect = thunky(function(cb) {
+		if (!verified) return cb(new Error('Host validation failed'));
+
 		var c = new Connection();
+		var fingerprint;
+
+		var verify = function(hash) {
+			fingerprint = hash;
+			return verified;
+		};
+
+		var done = function(err) {
+			if (err) return cb(err);
+			cb(null, c);
+		};
 
 		c.on('error', cb);
 		c.on('ready', function() {
-			cb(null, c);
+			if (!a.listeners('verify').length) return done();
+			a.emit('verify', fingerprint, function(err) {
+				if (!err) return done();
+				verified = false;
+				done(err);
+			});
 		});
 
 		var ready = function() {
+			if (!opts.hostHash) opts.hostHash = 'sha1';
+			if (!opts.hostVerifier) opts.hostVerifier = verify;
 			c.connect(opts);
 		};
 

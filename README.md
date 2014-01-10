@@ -46,6 +46,20 @@ var ssh = agent('username@example.com', {
 });
 ```
 
+### Host verification
+
+The agent will emit a `verify` event when it wants you to verify a host fingerprint.
+You should validate that the fingerprint is correct and return an error if not.
+
+``` js
+ssh.on('verify', function(fingerprint, callback) {
+	console.log('Server fingerprint is', fingerprint);
+	callback(); // pass an error to indicate a bad fingerprint
+});
+```
+
+If you do not want to to host validation simply do not listen for the `verify` event
+
 ## License
 
 MIT
