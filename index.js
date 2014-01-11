@@ -121,7 +121,7 @@ var agent = function(host, opts) {
 		if (Buffer.isBuffer(opts.privateKey)) return ready();
 
 		fs.readFile(opts.privateKey.replace(/^~/, HOME), function(err, key) {
-			if (err) return cb(err);
+			if (err) return done(err);
 			opts.privateKey = key;
 			ready();
 		});
