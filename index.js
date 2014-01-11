@@ -2,6 +2,7 @@ var http = require('http');
 var Connection = require('ssh2');
 var thunky = require('thunky');
 var pump = require('pump');
+var once = require('once');
 var stream = require('stream');
 var fs = require('fs');
 var path = require('path');
@@ -80,7 +81,7 @@ var agent = function(host, opts) {
 	var refs = 0;
 
 	var verified = true;
-	var connect = thunky(function(cb) {
+	var connect = thunky(function loop(cb) {
 		if (!verified) return cb(new Error('Host validation failed'));
 
 		var c = new Connection();
@@ -91,12 +92,17 @@ var agent = function(host, opts) {
 			return verified;
 		};
 
-		var done = function(err) {
+		var done = once(function(err) {
 			if (err) return cb(err);
-			cb(null, c);
-		};
 
-		c.on('error', cb);
+			c.on('close', function() {
+				connect = thunky(loop);
+			});
+
+			cb(null, c);
+		});
+
+		c.on('error', done);
 		c.on('ready', function() {
 			if (!a.listeners('verify').length) return done();
 			a.emit('verify', fingerprint, function(err) {
