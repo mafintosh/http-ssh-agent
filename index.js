@@ -10,6 +10,7 @@ var net = require('net');
 var util = require('util');
 
 var HOME = process.env.HOME || process.env.USERPROFILE;
+var noop = function() {};
 
 var Socket = function(opts) {
 	var self = this;
@@ -20,6 +21,7 @@ var Socket = function(opts) {
 	this.output = new stream.PassThrough();
 	this.destroyed = false;
 	this.reading = false;
+	this.ref = true;
 
 	this.output.on('readable', function() {
 		if (self.reading) self._read();
@@ -37,6 +39,18 @@ var Socket = function(opts) {
 };
 
 util.inherits(Socket, stream.Duplex);
+
+Socket.prototype.onunref = Socket.prototype.onref = Socket.prototype.ondata = Socket.prototype.onend = noop;
+
+Socket.prototype.ref = function() {
+	this.ref = false;
+	if (this.onref) this.onref();
+};
+
+Socket.prototype.unref = function() {
+	this.ref = true;
+	if (this.onunref) this.onunref();
+};
 
 Socket.prototype.destroy = function(err) {
 	if (this.destroyed) return;
@@ -133,7 +147,7 @@ var agent = function(host, opts) {
 		connect(function(err, con) {
 			if (err) return socket.destroy(err);
 
-			refs++;
+			if (socket.ref) refs++;
 
 			var update = function() {
 				var sock = con._sock;
@@ -153,7 +167,9 @@ var agent = function(host, opts) {
 				update();
 			};
 
+			socket.onref = socket.onunref = update;
 			update();
+
 			con.forwardOut('127.0.0.1', 8000, opts.host, opts.port, function(err, stream) {
 				if (err) {
 					socket.destroy(err);
