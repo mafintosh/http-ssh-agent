@@ -169,7 +169,7 @@ var agent = function(host, opts) {
 				update();
 			};
 
-			socket.unref = function() {
+			socket.onunref = function() {
 				refs--;
 				update();
 			};
