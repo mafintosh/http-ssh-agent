@@ -196,7 +196,7 @@ var agent = function(host, opts) {
 		});
 
 		var ready = function() {
-			if (!opts.hostHash) opts.hostHash = 'sha1';
+			if (!opts.hostHash) opts.hostHash = 'md5';
 			if (!opts.hostVerifier) opts.hostVerifier = verify;
 			c.connect(opts);
 		};
