@@ -80,6 +80,71 @@ Socket.prototype._read = function() {
 	else this.reading = true;
 };
 
+var SSHWrap = function(conn) { // Wraps the rough parts of ssh2 streams
+	var self = this;
+
+	this.conn = conn;
+	this.ondrain = noop;
+	this.flushed = false;
+
+	var paused = false;
+	var update = function() {
+		if (self.flushed) {
+			if (!paused) return;
+			paused = false;
+			conn.resume();
+		} else {
+			if (paused) return;
+			paused = true;
+			conn.pause();
+		}
+	};
+
+	conn.on('drain', function() {
+		var ondrain = self.ondrain;
+		self.ondrain = noop;
+		ondrain();
+	});
+
+	conn.on('data', function(data) {
+		self.flushed = self.push(data);
+		if (self.flushed) return;
+		process.nextTick(update);
+	});
+
+	conn.on('end', function() {
+		self.push(null);
+	});
+
+	conn.on('close', function() {
+		self.emit('close');
+	});
+
+	conn.on('error', function(err) {
+		self.emit('error', err);
+	});
+
+	this.update = update;
+
+	this.on('finish', function() {
+		conn.end();
+	});
+
+	stream.Duplex.call(this);
+};
+
+util.inherits(SSHWrap, stream.Duplex);
+
+SSHWrap.prototype._write = function(data, enc, cb) {
+	if (!this.conn.writable) return cb();
+	if (this.conn.write(data) !== false) return cb();
+	this.ondrain = cb;
+};
+
+SSHWrap.prototype._read = function() {
+	this.flushed = true;
+	process.nextTick(this.update);
+};
 
 var agent = function(host, opts) {
 	if (typeof host === 'object' && host) return agent(null, host);
@@ -175,13 +240,14 @@ var agent = function(host, opts) {
 			};
 
 			if (socket.refed) socket.onref();
+			else update();
 
 			con.forwardOut('127.0.0.1', 8000, opts.host, opts.port, function(err, stream) {
 				if (err) {
 					socket.destroy(err);
 					socket.unref();
 				} else {
-					pump(socket.input, stream, socket.output, function() {
+					pump(socket.input, new SSHWrap(stream), socket.output, function() {
 						socket.unref();
 					});
 				}
