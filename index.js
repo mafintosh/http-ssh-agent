@@ -173,7 +173,7 @@ var toConnect = function(host, opts) {
 };
 
 var agent = function(host, opts) {
-	if (typeof host === 'object' && host) return toConnect(null, host);
+	if (typeof host === 'object' && host) return agent(null, host);
 	if (!opts) opts = {};
 
 	var create = typeof host === 'function' ? host : toConnect(host, opts);
