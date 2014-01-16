@@ -27,7 +27,7 @@ var agent = function(host, opts) {
 	if (typeof host === 'object' && host) return agent(null, host);
 	if (!opts) opts = {};
 
-	var connectTimeout = opts.timeout || 15000;
+	var connectTimeout = typeof opts.timeout === 'number' ? opts.timeout : 15000;
 	var hwm = opts.highWaterMark;
 	var a = new http.Agent();
 	var refs = 0;
@@ -53,8 +53,8 @@ var agent = function(host, opts) {
 		opts.hostVerifier = function(hash) {
 			fingerprint = hash;
 
-			if (!opts.verify) return true;
-			if (fingerprint === opts.verify) return true;
+			if (!opts.fingerprint) return true;
+			if (fingerprint === opts.fingerprint) return true;
 
 			conn.emit('error', new Error('Host could not be verified'));
 			return false;
@@ -80,12 +80,12 @@ var agent = function(host, opts) {
 
 		var onverify = function(err) {
 			if (err) return done(err);
-			opts.verify = fingerprint;
+			opts.fingerprint = fingerprint;
 			done();
 		};
 
 		conn.on('ready', function() {
-			if (fingerprint === opts.verify) return done();
+			if (fingerprint === opts.fingerprint) return done();
 			if (!a.emit('verify', fingerprint, onverify)) done();
 		});
 
@@ -116,9 +116,8 @@ var agent = function(host, opts) {
 			socket.destroy();
 		};
 
-
-		var timeout = setTimeout(destroy, connectTimeout);
-		if (timeout.unref) timeout.unref();
+		var timeout = connectTimeout && setTimeout(destroy, connectTimeout);
+		if (timeout && timeout.unref) timeout.unref();
 
 		connect(function(err, con, update) {
 			if (err) {
