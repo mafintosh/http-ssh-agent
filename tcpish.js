@@ -15,8 +15,11 @@ var Tcpish = function(opts) { // Wraps the rough parts of ssh2 streams
 	this.refed = true;
 	this.destroyed = false;
 	this.finished = false;
+	this.ticks = 0;
+	this.timeout = null;
 
 	this.on('finish', function() {
+		if (this.timeout) clearInterval(this.timeout);
 		this.finished = true;
 		if (this.conn) this.conn.end();
 	});
@@ -47,8 +50,25 @@ Tcpish.prototype.unref = function() {
 Tcpish.prototype.destroy = function(err) {
 	if (this.destroyed) return;
 	this.destroyed = true;
+	if (this.timeout) clearInterval(this.timeout);
+	if (err) this.emit('error', err);
 	if (this.conn) this.conn.destroy();
 	this.emit('close');
+};
+
+Tcpish.prototype.setTimeout = function(ms, cb) {
+	clearInterval(this.timeout);
+	if (!ms) return;
+	if (cb) this.on('timeout', cb);
+
+	var prev = this.ticks;
+	this.timeout = setInterval(function() {
+		if (prev !== self.ticks) return prev = self.ticks;
+		clearInterval(self.timeout);
+		self.emit('timeout');
+	}, ms);
+
+	if (this.timeout.unref) this.timeout.unref();
 };
 
 Tcpish.prototype.connect = function(conn) {
@@ -78,6 +98,7 @@ Tcpish.prototype.connect = function(conn) {
 	});
 
 	conn.on('data', function(data) {
+		self.ticks++;
 		self.flushed = self.push(data);
 		if (self.flushed) return;
 		process.nextTick(update);
@@ -118,6 +139,7 @@ Tcpish.prototype._write = function(data, enc, cb) {
 		this.cb = cb;
 		return;
 	}
+	this.ticks++;
 	if (!this.conn.writable) return cb();
 	if (this.conn.write(data) !== false) return cb();
 	this.ondrain = cb;
