@@ -58,7 +58,8 @@ ssh.on('verify', function(fingerprint, callback) {
 });
 ```
 
-If you do not want to to host validation simply do not listen for the `verify` event
+If you do not want to to host validation simply do not listen for the `verify` event.
+You can also choose to pass the hash to challange against as the `verify` option.
 
 ## License
 
