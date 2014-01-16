@@ -146,10 +146,7 @@ SSHWrap.prototype._read = function() {
 	process.nextTick(this.update);
 };
 
-var agent = function(host, opts) {
-	if (typeof host === 'object' && host) return agent(null, host);
-	if (!opts) opts = {};
-
+var toConnect = function(host, opts) {
 	if (host) {
 		var parts = host.match(/^(?:([^@]+)@)?([^:]+)(?::(\d+))?$/);
 		opts.username = parts[1] || 'root';
@@ -158,55 +155,49 @@ var agent = function(host, opts) {
 	}
 
 	opts.privateKey = opts.key || opts.privateKey || path.join('~', '.ssh', 'id_rsa');
+	opts.agent = opts.agent !== false && opts.agent || process.env.SSH_AUTH_SOCK;
 
-	var hwm = opts.highWaterMark;
-	var a = new http.Agent();
-	var refs = 0;
-
-	var verified = true;
-	var connect = thunky(function loop(cb) {
-		if (!verified) return cb(new Error('Host validation failed'));
-
+	return function() {
 		var c = new Connection();
-		var fingerprint;
-
-		var verify = function(hash) {
-			fingerprint = hash;
-			return verified;
-		};
-
-		var done = once(function(err) {
-			if (err) return cb(err);
-
-			c.on('close', function() {
-				connect = thunky(loop);
-			});
-
-			cb(null, c);
-		});
-
-		c.on('error', done);
-		c.on('ready', function() {
-			if (!a.listeners('verify').length) return done();
-			a.emit('verify', fingerprint, function(err) {
-				if (!err) return done();
-				verified = false;
-				done(err);
-			});
-		});
-
-		var ready = function() {
-			if (!opts.hostHash) opts.hostHash = 'md5';
-			if (!opts.hostVerifier) opts.hostVerifier = verify;
-			c.connect(opts);
-		};
 
 		if (Buffer.isBuffer(opts.privateKey)) return ready();
 
 		fs.readFile(opts.privateKey.replace(/^~/, HOME), function(err, key) {
-			if (err) return done(err);
+			if (err) return c.connect(opts);
 			opts.privateKey = key;
-			ready();
+			c.connect(opts);
+		});
+
+		return c;
+	};
+};
+
+var agent = function(host, opts) {
+	if (typeof host === 'object' && host) return toConnect(null, host);
+	if (!opts) opts = {};
+
+	var create = typeof host === 'function' ? host : toConnect(host, opts);
+	var hwm = opts.highWaterMark;
+	var a = new http.Agent();
+	var refs = 0;
+
+	var connect = thunky(function loop(cb) {
+		var c = create();
+
+		var done = once(function(err) {
+			if (err) return cb(err);
+			cb(null, c);
+		});
+
+		c.on('ready', done);
+
+		c.on('error', function(err) {
+			c.end();
+			done(err);
+		});
+
+		c.on('close', function() {
+			connect = thunky(loop);
 		});
 	});
 
