@@ -7,8 +7,8 @@
   "dependencies": {
     "thunky": "~0.1.0",
     "ssh2": "~0.2.16",
-    "pump": "~0.2.3",
-    "once": "~1.3.0"
+    "once": "~1.3.0",
+    "end-of-stream": "~0.1.3"
   },
   "keywords": [
     "http",
