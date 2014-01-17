@@ -20,7 +20,7 @@ try {
 var noop = function() {};
 
 var encrypted = function(key) {
-	return key && key.toString().indexOf('encrypted') > -1;
+	return key && key.toString().toLowerCase().indexOf('encrypted') > -1;
 };
 
 var agent = function(host, opts) {
