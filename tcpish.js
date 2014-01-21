@@ -91,11 +91,20 @@ Tcpish.prototype.connect = function(conn) {
 		}
 	};
 
-	conn.on('drain', function() {
+	var ondrain = function() {
 		var ondrain = self.ondrain;
 		self.ondrain = noop;
 		ondrain();
-	});
+	};
+
+	var drainOutBuffer = conn._drainOutBuffer;
+	conn._drainOutBuffer = function() {
+		var ret = drainOutBuffer.apply(conn, arguments);
+		if (ret !== false) ondrain();
+		return ret;
+	};
+
+	conn.on('drain', ondrain);
 
 	conn.on('data', function(data) {
 		self.ticks++;
