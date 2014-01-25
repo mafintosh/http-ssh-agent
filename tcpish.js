@@ -97,13 +97,6 @@ Tcpish.prototype.connect = function(conn) {
 		ondrain();
 	};
 
-	var drainOutBuffer = conn._drainOutBuffer;
-	conn._drainOutBuffer = function() {
-		var ret = drainOutBuffer.apply(conn, arguments);
-		if (ret !== false) ondrain();
-		return ret;
-	};
-
 	conn.on('drain', ondrain);
 
 	conn.on('data', function(data) {
