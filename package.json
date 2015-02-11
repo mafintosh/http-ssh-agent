@@ -1,6 +1,6 @@
 {
   "name": "http-ssh-agent",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Send requests to http servers over ssh",
   "repository": "git://github.com/mafintosh/http-ssh-agent.git",
   "author": "Mathias Buus <mathiasbuus@gmail.com>",
