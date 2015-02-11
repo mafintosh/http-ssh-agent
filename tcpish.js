@@ -50,6 +50,7 @@ Tcpish.prototype.unref = function() {
 Tcpish.prototype.destroy = function(err) {
   if (this.destroyed) return
   this.destroyed = true
+  this.readable = this.writable = false
   if (this.timeout) clearInterval(this.timeout)
   if (err) this.emit('error', err)
   if (this.conn) this.conn.destroy()
