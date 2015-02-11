@@ -56,6 +56,12 @@ Tcpish.prototype.destroy = function(err) {
   this.emit('close')
 }
 
+Tcpish.prototype.destroySoon = function() {
+  if (this.writable) this.end()
+  if (this._writableState.finished) this.destroy()
+  else this.once('finish', this.destroy)
+}
+
 Tcpish.prototype.setTimeout = function(ms, cb) {
   clearInterval(this.timeout)
   if (!ms) return
