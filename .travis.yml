@@ -2,4 +2,8 @@ language: node_js
 node_js:
   - "0.10"
   - "0.12"
-
+before_install:
+  - mkdir -p ~/.ssh
+  - ssh-keygen -f ~/.ssh/id_rsa -t rsa -N ''
+  - cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+  - sudo apt-get install -qy openssh-server
