@@ -6,6 +6,8 @@ Node.js [http agent](http://nodejs.org/api/http.html#http_class_http_agent) that
 npm install http-ssh-agent
 ```
 
+[![build status](http://img.shields.io/travis/mafintosh/http-ssh-agent.svg?style=flat)](http://travis-ci.org/mafintosh/http-ssh-agent)
+
 ## Usage
 
 Start a http server on a server that you have ssh access to. Since we will be accessing the server using ssh the server can bind to a port that is not open externally.
