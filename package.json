@@ -11,10 +11,13 @@
     "thunky": "^0.1.0"
   },
   "devDependencies": {
-    "standard": "^2.6.3"
+    "concat-stream": "^1.4.7",
+    "standard": "^2.6.3",
+    "tape": "^3.5.0",
+    "username": "^1.0.0"
   },
   "scripts": {
-    "test": "standard"
+    "test": "standard && tape test.js"
   },
   "keywords": [
     "http",
