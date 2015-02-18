@@ -2,7 +2,9 @@
 
 Node.js [http agent](http://nodejs.org/api/http.html#http_class_http_agent) that allows you to send http requests over ssh.
 
-	npm install http-ssh-agent
+```
+npm install http-ssh-agent
+```
 
 ## Usage
 
@@ -19,11 +21,11 @@ var agent = require('http-ssh-agent')
 var ssh = agent('username@example.com')
 
 http.get({
-	port: 8080,        // assuming the remote server is running on port 8080
-	host: '127.0.0.1', // the host is resolved via ssh so 127.0.0.1 -> example.com
-	agent: ssh         // simply pass the agent
+  port: 8080,        // assuming the remote server is running on port 8080
+  host: '127.0.0.1', // the host is resolved via ssh so 127.0.0.1 -> example.com
+  agent: ssh         // simply pass the agent
 }, function(response) {
-	response.pipe(process.stdout)
+  response.pipe(process.stdout)
 })
 ```
 
@@ -41,8 +43,8 @@ Pass additional ssh options as the second argument. See [ssh2](https://github.co
 
 ``` js
 var ssh = agent('username@example.com', {
-	privateKey: 'path-to-private-key', // can also be a buffer,
-	password: 'ssh-password'    // specify a password instead of a key
+  privateKey: 'path-to-private-key', // can also be a buffer,
+  password: 'ssh-password'    // specify a password instead of a key
 })
 ```
 
@@ -53,8 +55,8 @@ You should validate that the fingerprint is correct and return an error if not.
 
 ``` js
 ssh.on('verify', function(fingerprint, callback) {
-	console.log('Server fingerprint is', fingerprint)
-	callback() // pass an error to indicate a bad fingerprint
+  console.log('Server fingerprint is', fingerprint)
+  callback() // pass an error to indicate a bad fingerprint
 })
 ```
 
