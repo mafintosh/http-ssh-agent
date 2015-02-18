@@ -1,9 +1,9 @@
 var stream = require('stream')
 var util = require('util')
 
-var noop = function() {}
+var noop = function () {}
 
-var Tcpish = function(opts) { // Wraps the rough parts of ssh2 streams
+var Tcpish = function (opts) { // Wraps the rough parts of ssh2 streams
   stream.Duplex.call(this, opts)
 
   this.ondrain = noop
@@ -18,7 +18,7 @@ var Tcpish = function(opts) { // Wraps the rough parts of ssh2 streams
   this.ticks = 0
   this.timeout = null
 
-  this.on('finish', function() {
+  this.on('finish', function () {
     if (this.timeout) clearInterval(this.timeout)
     this.finished = true
     if (this.conn) this.conn.end()
@@ -35,19 +35,19 @@ Tcpish.prototype.onunref = noop
 
 Tcpish.prototype.setNoDelay = noop
 
-Tcpish.prototype.ref = function() {
+Tcpish.prototype.ref = function () {
   if (this.refed) return
   this.refed = true
   this.onref()
 }
 
-Tcpish.prototype.unref = function() {
+Tcpish.prototype.unref = function () {
   if (!this.refed) return
   this.refed = false
   this.onunref()
 }
 
-Tcpish.prototype.destroy = function(err) {
+Tcpish.prototype.destroy = function (err) {
   if (this.destroyed) return
   this.destroyed = true
   this.readable = this.writable = false
@@ -57,20 +57,23 @@ Tcpish.prototype.destroy = function(err) {
   this.emit('close')
 }
 
-Tcpish.prototype.destroySoon = function() {
+Tcpish.prototype.destroySoon = function () {
   if (this.writable) this.end()
   if (this._writableState.finished) this.destroy()
   else this.once('finish', this.destroy)
 }
 
-Tcpish.prototype.setTimeout = function(ms, cb) {
+Tcpish.prototype.setTimeout = function (ms, cb) {
   clearInterval(this.timeout)
   if (!ms) return
   if (cb) this.on('timeout', cb)
 
   var prev = this.ticks
-  this.timeout = setInterval(function() {
-    if (prev !== self.ticks) return prev = self.ticks
+  this.timeout = setInterval(function () {
+    if (prev !== self.ticks) {
+      prev = self.ticks
+      return
+    }
     clearInterval(self.timeout)
     self.emit('timeout')
   }, ms)
@@ -78,7 +81,7 @@ Tcpish.prototype.setTimeout = function(ms, cb) {
   if (this.timeout.unref) this.timeout.unref()
 }
 
-Tcpish.prototype.connect = function(conn) {
+Tcpish.prototype.connect = function (conn) {
   var self = this
 
   this.ondrain = noop
@@ -86,7 +89,7 @@ Tcpish.prototype.connect = function(conn) {
   this.conn = conn
 
   var paused = false
-  var update = function() {
+  var update = function () {
     if (self.flushed) {
       if (!paused) return
       paused = false
@@ -98,7 +101,7 @@ Tcpish.prototype.connect = function(conn) {
     }
   }
 
-  var ondrain = function() {
+  var ondrain = function () {
     var ondrain = self.ondrain
     self.ondrain = noop
     ondrain()
@@ -106,22 +109,22 @@ Tcpish.prototype.connect = function(conn) {
 
   conn.on('drain', ondrain)
 
-  conn.on('data', function(data) {
+  conn.on('data', function (data) {
     self.ticks++
     self.flushed = self.push(data)
     if (self.flushed) return
     process.nextTick(update)
   })
 
-  conn.on('end', function() {
+  conn.on('end', function () {
     self.push(null)
   })
 
-  conn.on('close', function() {
+  conn.on('close', function () {
     self.emit('close')
   })
 
-  conn.on('error', function(err) {
+  conn.on('error', function (err) {
     self.emit('error', err)
   })
 
@@ -142,7 +145,7 @@ Tcpish.prototype.connect = function(conn) {
   if (this.destroyed) this.conn.destroy()
 }
 
-Tcpish.prototype._write = function(data, enc, cb) {
+Tcpish.prototype._write = function (data, enc, cb) {
   if (!this.conn) {
     this.buffer = data
     this.cb = cb
@@ -154,11 +157,11 @@ Tcpish.prototype._write = function(data, enc, cb) {
   this.ondrain = cb
 }
 
-Tcpish.prototype._read = function() {
+Tcpish.prototype._read = function () {
   this.flushed = true
   process.nextTick(this.update)
 }
 
-module.exports = function() {
+module.exports = function () {
   return new Tcpish()
 }

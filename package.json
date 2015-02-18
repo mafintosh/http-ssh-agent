@@ -10,6 +10,12 @@
     "ssh2": "^0.4.4",
     "thunky": "^0.1.0"
   },
+  "devDependencies": {
+    "standard": "^2.6.3"
+  },
+  "scripts": {
+    "test": "standard"
+  },
   "keywords": [
     "http",
     "agent",

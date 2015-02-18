@@ -5,7 +5,6 @@ var thunky = require('thunky')
 var once = require('once')
 var fs = require('fs')
 var path = require('path')
-var net = require('net')
 var tcpish = require('./tcpish')
 
 var HOME = process.env.HOME || process.env.USERPROFILE
@@ -17,13 +16,11 @@ try {
   ID_RSA = null
 }
 
-var noop = function() {}
-
-var encrypted = function(key) {
+var encrypted = function (key) {
   return key && key.toString().toLowerCase().indexOf('encrypted') > -1
 }
 
-var agent = function(host, opts) {
+var agent = function (host, opts) {
   if (typeof host === 'object' && host) return agent(null, host)
   if (!opts) opts = {}
 
@@ -43,14 +40,13 @@ var agent = function(host, opts) {
   opts.agent = opts.agent !== false && opts.agent || process.env.SSH_AUTH_SOCK
 
   var conn
-  var verified = false
   var fingerprint
 
-  var connect = thunky(function loop(cb) {
+  var connect = thunky(function loop (cb) {
     conn = new Connection()
 
     opts.hostHash = 'md5'
-    opts.hostVerifier = function(hash) {
+    opts.hostVerifier = function (hash) {
       fingerprint = hash
 
       if (!opts.fingerprint) return true
@@ -60,7 +56,7 @@ var agent = function(host, opts) {
       return false
     }
 
-    var update = function() {
+    var update = function () {
       var sock = conn._sock
       var pinger = conn._pinger
 
@@ -73,44 +69,44 @@ var agent = function(host, opts) {
       }
     }
 
-    var done = once(function(err) {
+    var done = once(function (err) {
       if (err) return cb(err)
       cb(null, conn, update)
     })
 
-    var onverify = function(err) {
+    var onverify = function (err) {
       if (err) return done(err)
       opts.fingerprint = fingerprint
       done()
     }
 
-    conn.on('ready', function() {
+    conn.on('ready', function () {
       if (fingerprint === opts.fingerprint) return done()
       if (!a.emit('verify', fingerprint, onverify)) done()
     })
 
-    conn.on('error', function(err) {
+    conn.on('error', function (err) {
       conn.end()
       done(err)
     })
 
-    conn.on('close', function() {
+    conn.on('close', function () {
       connect = thunky(loop)
       done(new Error('Connection closed'))
     })
 
     if (typeof opts.privateKey !== 'string' || opts.privateKey.indexOf('\n') > -1) return conn.connect(opts)
 
-    fs.readFile(opts.privateKey, function(_, buf) {
+    fs.readFile(opts.privateKey, function (_, buf) {
       opts.privateKey = buf
       conn.connect(opts)
     })
   })
 
-  a.createConnection = function(opts) {
-    var socket = tcpish(hwm ? {highWaterMark:hwm} : {})
+  a.createConnection = function (opts) {
+    var socket = tcpish(hwm ? {highWaterMark: hwm} : {})
 
-    var destroy = function() {
+    var destroy = function () {
       if (conn && conn._sock) conn._sock.destroy()
       else if (conn) conn.end()
       socket.destroy()
@@ -119,18 +115,18 @@ var agent = function(host, opts) {
     var timeout = connectTimeout && setTimeout(destroy, connectTimeout)
     if (timeout && timeout.unref) timeout.unref()
 
-    connect(function(err, con, update) {
+    connect(function (err, con, update) {
       if (err) {
         clearTimeout(timeout)
         return socket.destroy(err)
       }
 
-      socket.onref = function() {
+      socket.onref = function () {
         refs++
         update()
       }
 
-      socket.onunref = function() {
+      socket.onunref = function () {
         refs--
         update()
       }
@@ -138,7 +134,7 @@ var agent = function(host, opts) {
       if (socket.refed) socket.onref()
       else update()
 
-      con.forwardOut('127.0.0.1', 8000, opts.host, opts.port, function(err, stream) {
+      con.forwardOut('127.0.0.1', 8000, opts.host, opts.port, function (err, stream) {
         clearTimeout(timeout)
 
         if (err) {
@@ -146,18 +142,18 @@ var agent = function(host, opts) {
           socket.unref()
         } else {
           socket.connect(stream)
-          eos(stream, function() {
+          eos(stream, function () {
             socket.unref()
           })
         }
       })
     })
 
-    socket.on('data', function(data) {
+    socket.on('data', function (data) {
       if (socket.ondata) socket.ondata(data, 0, data.length)
     })
 
-    socket.on('end', function() {
+    socket.on('end', function () {
       if (socket.onend) socket.onend()
     })
 
